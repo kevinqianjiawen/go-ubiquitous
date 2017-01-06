@@ -2,4 +2,9 @@
     <string name="app_name">wear</string>
     <string name="hello_round">Hello Round World!</string>
     <string name="hello_square">Hello Square World!</string>
+
+    <string name="fit_steps_name">Sun Shine</string>
+    <string name="fit_steps">%1$d steps</string>
+    <string name="fit_am">AM</string>
+    <string name="fit_pm">PM</string>
 </resources>

@@ -20,7 +20,10 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.SharedPreferences;
 import android.content.res.Resources;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
@@ -29,6 +32,7 @@ import android.graphics.Typeface;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
+import android.support.annotation.Nullable;
 import android.support.wearable.watchface.CanvasWatchFaceService;
 import android.support.wearable.watchface.WatchFaceStyle;
 import android.text.format.DateFormat;
@@ -101,6 +105,14 @@ public class SunshineWatchFaceService extends CanvasWatchFaceService {
         private static final String COLON_STRING = ":";
 
         private static final int MSG_UPDATE_TIME = 0;
+
+        static final String PREFERENCES = "PREFERENCES";
+        static final String KEY_WEATHER = "KEY_WEATHER";
+        static final String KEY_WEATHER_ID = "KEY_WEATHER_ID";
+        static final String WEATHER_DATA_PATH = "/WEATHER_DATA_PATH";
+        static final String WEATHER_DATA_ID = "WEATHER_DATA_ID";
+        static final String WEATHER_DATA_HIGH = "WEATHER_DATA_HIGH";
+        static final String WEATHER_DATA_LOW = "WEATHER_DATA_LOW";
 
         /* Handler to update the time periodically in interactive mode. */
         private final Handler mUpdateTimeHandler = new Handler() {
@@ -175,6 +187,13 @@ public class SunshineWatchFaceService extends CanvasWatchFaceService {
 
         private int mStepsTotal = 0;
 
+
+        //weather
+        @Nullable String mWeather;
+        private int mWeatherId;
+        @Nullable Bitmap mBitmap;
+
+
         @Override
         public void onCreate(SurfaceHolder holder) {
             if (Log.isLoggable(TAG, Log.DEBUG)) {
@@ -182,6 +201,11 @@ public class SunshineWatchFaceService extends CanvasWatchFaceService {
             }
 
             super.onCreate(holder);
+
+            SharedPreferences preferences = getSharedPreferences(PREFERENCES, MODE_PRIVATE);
+            mWeather = preferences.getString(KEY_WEATHER, "");
+            mWeatherId = preferences.getInt(KEY_WEATHER_ID, 0);
+            loadIcon();
 
             mStepsRequested = false;
             mGoogleApiClient = new GoogleApiClient.Builder(SunshineWatchFaceService.this)
@@ -536,6 +560,42 @@ public class SunshineWatchFaceService extends CanvasWatchFaceService {
                 }
             } else {
                 Log.e(TAG, "onResult() failed! " + dailyTotalResult.getStatus().getStatusMessage());
+            }
+        }
+
+        private void loadIcon() {
+
+            int iconId = 0;
+            if (mWeatherId >= 200 && mWeatherId <= 232) {
+                iconId = R.drawable.ic_storm;
+            } else if (mWeatherId >= 300 && mWeatherId <= 321) {
+                iconId = R.drawable.ic_light_rain;
+            } else if (mWeatherId >= 500 && mWeatherId <= 504) {
+                iconId = R.drawable.ic_rain;
+            } else if (mWeatherId == 511) {
+                iconId = R.drawable.ic_snow;
+            } else if (mWeatherId >= 520 && mWeatherId <= 531) {
+                iconId = R.drawable.ic_rain;
+            } else if (mWeatherId >= 600 && mWeatherId <= 622) {
+                iconId = R.drawable.ic_snow;
+            } else if (mWeatherId >= 701 && mWeatherId <= 761) {
+                iconId = R.drawable.ic_fog;
+            } else if (mWeatherId == 761 || mWeatherId == 781) {
+                iconId = R.drawable.ic_storm;
+            } else if (mWeatherId == 800) {
+                iconId = R.drawable.ic_clear;
+            } else if (mWeatherId == 801) {
+                iconId = R.drawable.ic_light_clouds;
+            } else if (mWeatherId >= 802 && mWeatherId <= 804) {
+                iconId = R.drawable.ic_cloudy;
+            }
+
+            if (iconId != 0) {
+                float scale = 1.2f;
+                mBitmap = BitmapFactory.decodeResource(getResources(), iconId);
+                float sizeY = (float) mBitmap.getHeight() * scale;
+                float sizeX = (float) mBitmap.getWidth() * scale;
+                mBitmap = Bitmap.createScaledBitmap(mBitmap, (int) sizeX, (int) sizeY, false);
             }
         }
     }

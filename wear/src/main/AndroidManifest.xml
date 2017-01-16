@@ -11,7 +11,7 @@
         android:theme="@android:style/Theme.DeviceDefault">
 
     <service
-        android:name=".FitStepsWatchFaceService"
+        android:name=".SunshineWatchFaceService"
         android:label="@string/fit_steps_name"
         android:permission="android.permission.BIND_WALLPAPER">
         <meta-data

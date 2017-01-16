@@ -67,9 +67,9 @@ import java.util.concurrent.TimeUnit;
  * require burn-in protection, the hours are drawn in normal rather than bold.
  *
  */
-public class FitStepsWatchFaceService extends CanvasWatchFaceService {
+public class SunshineWatchFaceService extends CanvasWatchFaceService {
 
-    private static final String TAG = "StepCountWatchFace";
+    private static final String TAG = "SunshineWatchFace";
 
     private static final Typeface BOLD_TYPEFACE =
             Typeface.create(Typeface.SANS_SERIF, Typeface.BOLD);
@@ -184,7 +184,7 @@ public class FitStepsWatchFaceService extends CanvasWatchFaceService {
             super.onCreate(holder);
 
             mStepsRequested = false;
-            mGoogleApiClient = new GoogleApiClient.Builder(FitStepsWatchFaceService.this)
+            mGoogleApiClient = new GoogleApiClient.Builder(SunshineWatchFaceService.this)
                     .addConnectionCallbacks(this)
                     .addOnConnectionFailedListener(this)
                     .addApi(Fitness.HISTORY_API)
@@ -195,7 +195,7 @@ public class FitStepsWatchFaceService extends CanvasWatchFaceService {
                     .useDefaultAccount()
                     .build();
 
-            setWatchFaceStyle(new WatchFaceStyle.Builder(FitStepsWatchFaceService.this)
+            setWatchFaceStyle(new WatchFaceStyle.Builder(SunshineWatchFaceService.this)
                     .setCardPeekMode(WatchFaceStyle.PEEK_MODE_VARIABLE)
                     .setBackgroundVisibility(WatchFaceStyle.BACKGROUND_VISIBILITY_INTERRUPTIVE)
                     .setShowSystemUiTime(false)
@@ -271,7 +271,7 @@ public class FitStepsWatchFaceService extends CanvasWatchFaceService {
             }
             mRegisteredReceiver = true;
             IntentFilter filter = new IntentFilter(Intent.ACTION_TIMEZONE_CHANGED);
-            FitStepsWatchFaceService.this.registerReceiver(mReceiver, filter);
+            SunshineWatchFaceService.this.registerReceiver(mReceiver, filter);
         }
 
         private void unregisterReceiver() {
@@ -279,7 +279,7 @@ public class FitStepsWatchFaceService extends CanvasWatchFaceService {
                 return;
             }
             mRegisteredReceiver = false;
-            FitStepsWatchFaceService.this.unregisterReceiver(mReceiver);
+            SunshineWatchFaceService.this.unregisterReceiver(mReceiver);
         }
 
         @Override
@@ -290,7 +290,7 @@ public class FitStepsWatchFaceService extends CanvasWatchFaceService {
             super.onApplyWindowInsets(insets);
 
             // Load resources that have alternate values for round watches.
-            Resources resources = FitStepsWatchFaceService.this.getResources();
+            Resources resources = SunshineWatchFaceService.this.getResources();
             boolean isRound = insets.isRound();
             mXOffset = resources.getDimension(isRound
                     ? R.dimen.fit_x_offset_round : R.dimen.fit_x_offset);
@@ -372,7 +372,7 @@ public class FitStepsWatchFaceService extends CanvasWatchFaceService {
         public void onDraw(Canvas canvas, Rect bounds) {
             long now = System.currentTimeMillis();
             mCalendar.setTimeInMillis(now);
-            boolean is24Hour = DateFormat.is24HourFormat(FitStepsWatchFaceService.this);
+            boolean is24Hour = DateFormat.is24HourFormat(SunshineWatchFaceService.this);
 
             // Draw the background.
             canvas.drawColor(BACKGROUND_COLOR);

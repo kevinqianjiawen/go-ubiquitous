@@ -36,6 +36,7 @@ import android.support.annotation.Nullable;
 import android.support.wearable.watchface.CanvasWatchFaceService;
 import android.support.wearable.watchface.WatchFaceStyle;
 import android.text.format.DateFormat;
+import android.text.format.Time;
 import android.util.Log;
 import android.view.SurfaceHolder;
 import android.view.WindowInsets;
@@ -51,6 +52,7 @@ import com.google.android.gms.fitness.data.DataPoint;
 import com.google.android.gms.fitness.data.DataType;
 import com.google.android.gms.fitness.data.Field;
 import com.google.android.gms.fitness.result.DailyTotalResult;
+import com.google.android.gms.wearable.Wearable;
 
 import java.util.Calendar;
 import java.util.List;
@@ -192,7 +194,15 @@ public class SunshineWatchFaceService extends CanvasWatchFaceService {
         @Nullable String mWeather;
         private int mWeatherId;
         @Nullable Bitmap mBitmap;
-
+        Paint mIconPaint;
+        Paint mTemperaturePaint;
+        Paint mBackgroundPaint;
+        Time mTime;
+        float mTimeXOffset;
+        float mTimeYOffset;
+        Paint mTimePaint;
+        String date = "";
+        Paint mDatePaint;
 
         @Override
         public void onCreate(SurfaceHolder holder) {
@@ -211,12 +221,7 @@ public class SunshineWatchFaceService extends CanvasWatchFaceService {
             mGoogleApiClient = new GoogleApiClient.Builder(SunshineWatchFaceService.this)
                     .addConnectionCallbacks(this)
                     .addOnConnectionFailedListener(this)
-                    .addApi(Fitness.HISTORY_API)
-                    .addApi(Fitness.RECORDING_API)
-                    // When user has multiple accounts, useDefaultAccount() allows Google Fit to
-                    // associated with the main account for steps. It also replaces the need for
-                    // a scope request.
-                    .useDefaultAccount()
+                    .addApi(Wearable.API)
                     .build();
 
             setWatchFaceStyle(new WatchFaceStyle.Builder(SunshineWatchFaceService.this)
@@ -227,19 +232,27 @@ public class SunshineWatchFaceService extends CanvasWatchFaceService {
 
             Resources resources = getResources();
 
-            mYOffset = resources.getDimension(R.dimen.fit_y_offset);
-            mLineHeight = resources.getDimension(R.dimen.fit_line_height);
-            mAmString = resources.getString(R.string.fit_am);
-            mPmString = resources.getString(R.string.fit_pm);
+            mBackgroundPaint = new Paint();
+            mBackgroundPaint.setColor(resources.getColor(R.color.background));
 
-            mHourPaint = createTextPaint(TEXT_HOURS_MINS_COLOR, BOLD_TYPEFACE);
-            mMinutePaint = createTextPaint(TEXT_HOURS_MINS_COLOR);
-            mSecondPaint = createTextPaint(TEXT_SECONDS_COLOR);
-            mAmPmPaint = createTextPaint(TEXT_AM_PM_COLOR);
-            mColonPaint = createTextPaint(TEXT_COLON_COLOR);
-            mStepCountPaint = createTextPaint(TEXT_STEP_COUNT_COLOR);
+            mTime = new Time();
+            mTimeYOffset = resources.getDimension(R.dimen.digital_time_y_offset);
+            mTimePaint = new Paint();
+            mTimePaint.setColor(resources.getColor(R.color.digital_text));
+            mTimePaint.setTypeface(NORMAL_TYPEFACE);
+            mTimePaint.setAntiAlias(true);
 
-            mCalendar = Calendar.getInstance();
+            mDatePaint = new Paint();
+            mDatePaint.setColor(resources.getColor(R.color.digital_text));
+            mDatePaint.setTypeface(NORMAL_TYPEFACE);
+            mDatePaint.setAntiAlias(true);
+
+            mIconPaint = new Paint();
+
+            mTemperaturePaint = new Paint();
+            mTemperaturePaint.setColor(resources.getColor(R.color.digital_text));
+            mTemperaturePaint.setTypeface(NORMAL_TYPEFACE);
+            mTemperaturePaint.setAntiAlias(true);
 
         }
 

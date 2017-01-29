@@ -61,6 +61,7 @@ import com.google.android.gms.wearable.DataMap;
 import com.google.android.gms.wearable.DataMapItem;
 import com.google.android.gms.wearable.Wearable;
 
+import java.lang.ref.WeakReference;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Date;
@@ -96,9 +97,34 @@ public class SunshineWatchFaceService extends CanvasWatchFaceService {
      */
     private static final long ACTIVE_INTERVAL_MS = TimeUnit.SECONDS.toMillis(1);
 
+    /**
+     * Handler message id for updating the time periodically in interactive mode.
+     */
+    private static final int MSG_UPDATE_TIME = 0;
+
     @Override
     public Engine onCreateEngine() {
         return new Engine();
+    }
+
+    private static class EngineHandler extends Handler {
+        private final WeakReference<SunshineWatchFaceService.Engine> mWeakReference;
+
+        EngineHandler(SunshineWatchFaceService.Engine reference) {
+            mWeakReference = new WeakReference<>(reference);
+        }
+
+        @Override
+        public void handleMessage(Message msg) {
+            SunshineWatchFaceService.Engine engine = mWeakReference.get();
+            if (engine != null) {
+                switch (msg.what) {
+                    case MSG_UPDATE_TIME:
+                        engine.handleUpdateTimeMessage();
+                        break;
+                }
+            }
+        }
     }
 
     private class Engine extends CanvasWatchFaceService.Engine implements
@@ -106,16 +132,6 @@ public class SunshineWatchFaceService extends CanvasWatchFaceService {
             GoogleApiClient.OnConnectionFailedListener,
             DataApi.DataListener{
 
-        private static final int BACKGROUND_COLOR = Color.BLACK;
-        private static final int TEXT_HOURS_MINS_COLOR = Color.WHITE;
-        private static final int TEXT_SECONDS_COLOR = Color.GRAY;
-        private static final int TEXT_AM_PM_COLOR = Color.GRAY;
-        private static final int TEXT_COLON_COLOR = Color.GRAY;
-        private static final int TEXT_STEP_COUNT_COLOR = Color.GRAY;
-
-        private static final String COLON_STRING = ":";
-
-        private static final int MSG_UPDATE_TIME = 0;
 
         static final String PREFERENCES = "PREFERENCES";
         static final String KEY_WEATHER = "KEY_WEATHER";
@@ -125,26 +141,9 @@ public class SunshineWatchFaceService extends CanvasWatchFaceService {
         static final String WEATHER_DATA_HIGH = "WEATHER_DATA_HIGH";
         static final String WEATHER_DATA_LOW = "WEATHER_DATA_LOW";
 
-        /* Handler to update the time periodically in interactive mode. */
-        private final Handler mUpdateTimeHandler = new Handler() {
-            @Override
-            public void handleMessage(Message message) {
-                switch (message.what) {
-                    case MSG_UPDATE_TIME:
-                        if (Log.isLoggable(TAG, Log.VERBOSE)) {
-                            Log.v(TAG, "updating time");
-                        }
-                        invalidate();
-                        if (shouldUpdateTimeHandlerBeRunning()) {
-                            long timeMs = System.currentTimeMillis();
-                            long delayMs =
-                                    ACTIVE_INTERVAL_MS - (timeMs % ACTIVE_INTERVAL_MS);
-                            mUpdateTimeHandler.sendEmptyMessageDelayed(MSG_UPDATE_TIME, delayMs);
-                        }
-                        break;
-                }
-            }
-        };
+        final Handler mUpdateTimeHandler = new EngineHandler(this);
+
+
 
         /**
          * Handles time zone and locale changes.
@@ -603,6 +602,27 @@ public class SunshineWatchFaceService extends CanvasWatchFaceService {
                 float sizeY = (float) mBitmap.getHeight() * scale;
                 float sizeX = (float) mBitmap.getWidth() * scale;
                 mBitmap = Bitmap.createScaledBitmap(mBitmap, (int) sizeX, (int) sizeY, false);
+            }
+        }
+
+
+        /**
+         * Returns whether the {@link #mUpdateTimeHandler} timer should be running. The timer should
+         * only run when we're visible and in interactive mode.
+         */
+        private boolean shouldTimerBeRunning() {
+            return isVisible() && !isInAmbientMode();
+        }
+        /**
+         * Handle updating the time periodically in interactive mode.
+         */
+        private void handleUpdateTimeMessage() {
+            invalidate();
+            if (shouldTimerBeRunning()) {
+                long timeMs = System.currentTimeMillis();
+                long delayMs = ACTIVE_INTERVAL_MS
+                        - (timeMs % ACTIVE_INTERVAL_MS);
+                mUpdateTimeHandler.sendEmptyMessageDelayed(MSG_UPDATE_TIME, delayMs);
             }
         }
     }

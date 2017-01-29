@@ -16,6 +16,7 @@
 
 package com.example.wear;
 
+import android.annotation.SuppressLint;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
@@ -52,9 +53,17 @@ import com.google.android.gms.fitness.data.DataPoint;
 import com.google.android.gms.fitness.data.DataType;
 import com.google.android.gms.fitness.data.Field;
 import com.google.android.gms.fitness.result.DailyTotalResult;
+import com.google.android.gms.wearable.DataApi;
+import com.google.android.gms.wearable.DataEvent;
+import com.google.android.gms.wearable.DataEventBuffer;
+import com.google.android.gms.wearable.DataItem;
+import com.google.android.gms.wearable.DataMap;
+import com.google.android.gms.wearable.DataMapItem;
 import com.google.android.gms.wearable.Wearable;
 
+import java.text.SimpleDateFormat;
 import java.util.Calendar;
+import java.util.Date;
 import java.util.List;
 import java.util.TimeZone;
 import java.util.concurrent.TimeUnit;
@@ -95,7 +104,7 @@ public class SunshineWatchFaceService extends CanvasWatchFaceService {
     private class Engine extends CanvasWatchFaceService.Engine implements
             GoogleApiClient.ConnectionCallbacks,
             GoogleApiClient.OnConnectionFailedListener,
-            ResultCallback<DailyTotalResult> {
+            DataApi.DataListener{
 
         private static final int BACKGROUND_COLOR = Color.BLACK;
         private static final int TEXT_HOURS_MINS_COLOR = Color.WHITE;
@@ -191,6 +200,7 @@ public class SunshineWatchFaceService extends CanvasWatchFaceService {
 
 
         //weather
+        String time = "";
         @Nullable String mWeather;
         private int mWeatherId;
         @Nullable Bitmap mBitmap;
@@ -366,11 +376,14 @@ public class SunshineWatchFaceService extends CanvasWatchFaceService {
         @Override
         public void onTimeTick() {
             super.onTimeTick();
-            if (Log.isLoggable(TAG, Log.DEBUG)) {
-                Log.d(TAG, "onTimeTick: ambient = " + isInAmbientMode());
-            }
+            mTime.setToNow();
+            time = String.format("%d:%02d", mTime.hour, mTime.minute);
 
-            getTotalSteps();
+            @SuppressLint("SimpleDateFormat")
+            java.text.DateFormat formatter = new SimpleDateFormat("EEE, MMM d, ''yy");
+            Date today = new Date();
+            date = formatter.format(today);
+
             invalidate();
         }
 
@@ -486,37 +499,38 @@ public class SunshineWatchFaceService extends CanvasWatchFaceService {
             return isVisible() && !isInAmbientMode();
         }
 
-        private void getTotalSteps() {
-            if (Log.isLoggable(TAG, Log.DEBUG)) {
-                Log.d(TAG, "getTotalSteps()");
-            }
-
-            if ((mGoogleApiClient != null)
-                    && (mGoogleApiClient.isConnected())
-                    && (!mStepsRequested)) {
-
-                mStepsRequested = true;
-
-                PendingResult<DailyTotalResult> stepsResult =
-                        Fitness.HistoryApi.readDailyTotal(
-                                mGoogleApiClient,
-                                DataType.TYPE_STEP_COUNT_DELTA);
-
-                stepsResult.setResultCallback(this);
-            }
-        }
 
         @Override
         public void onConnected(Bundle connectionHint) {
             if (Log.isLoggable(TAG, Log.DEBUG)) {
                 Log.d(TAG, "mGoogleApiAndFitCallbacks.onConnected: " + connectionHint);
             }
-            mStepsRequested = false;
+            Wearable.DataApi.addListener(mGoogleApiClient, this);
+        }
 
-            // The subscribe step covers devices that do not have Google Fit installed.
-            subscribeToSteps();
+        @Override
+        public void onDataChanged(DataEventBuffer dataEventBuffer) {
+            Log.d(TAG, "Weather data has been changed!");
+            for (DataEvent event : dataEventBuffer) {
+                DataItem item = event.getDataItem();
+                if (WEATHER_DATA_PATH.equals(item.getUri().getPath())) {
+                    DataMap dataMap = DataMapItem.fromDataItem(item).getDataMap();
+                    double high = dataMap.getDouble(WEATHER_DATA_HIGH);
+                    double low = dataMap.getDouble(WEATHER_DATA_LOW);
+                    long id = dataMap.getLong(WEATHER_DATA_ID);
 
-            getTotalSteps();
+                    mWeather = (int) Math.round(high) + "/" +  (int) Math.round(low);
+                    mWeatherId = (int) id;
+
+                    loadIcon();
+
+                    SharedPreferences preferences = getSharedPreferences(PREFERENCES, MODE_PRIVATE);
+                    SharedPreferences.Editor editor = preferences.edit();
+                    editor.putString(KEY_WEATHER, mWeather);
+                    editor.putInt(KEY_WEATHER_ID, mWeatherId);
+                    editor.apply();
+                }
+            }
         }
 
         /*
@@ -555,26 +569,6 @@ public class SunshineWatchFaceService extends CanvasWatchFaceService {
             }
         }
 
-        @Override
-        public void onResult(DailyTotalResult dailyTotalResult) {
-            if (Log.isLoggable(TAG, Log.DEBUG)) {
-                Log.d(TAG, "mGoogleApiAndFitCallbacks.onResult(): " + dailyTotalResult);
-            }
-
-            mStepsRequested = false;
-
-            if (dailyTotalResult.getStatus().isSuccess()) {
-
-                List<DataPoint> points = dailyTotalResult.getTotal().getDataPoints();;
-
-                if (!points.isEmpty()) {
-                    mStepsTotal = points.get(0).getValue(Field.FIELD_STEPS).asInt();
-                    Log.d(TAG, "steps updated: " + mStepsTotal);
-                }
-            } else {
-                Log.e(TAG, "onResult() failed! " + dailyTotalResult.getStatus().getStatusMessage());
-            }
-        }
 
         private void loadIcon() {
 

@@ -162,24 +162,12 @@ public class SunshineWatchFaceService extends CanvasWatchFaceService {
          */
         private boolean mRegisteredReceiver = false;
 
-        private Paint mHourPaint;
-        private Paint mMinutePaint;
-        private Paint mSecondPaint;
-        private Paint mAmPmPaint;
-        private Paint mColonPaint;
-        private Paint mStepCountPaint;
+        boolean mAmbient;
 
-        private float mColonWidth;
 
         private Calendar mCalendar;
 
-        private float mXOffset;
-        private float mXStepsOffset;
-        private float mYOffset;
-        private float mLineHeight;
 
-        private String mAmString;
-        private String mPmString;
 
 
         /**
@@ -350,16 +338,7 @@ public class SunshineWatchFaceService extends CanvasWatchFaceService {
         @Override
         public void onPropertiesChanged(Bundle properties) {
             super.onPropertiesChanged(properties);
-
-            boolean burnInProtection = properties.getBoolean(PROPERTY_BURN_IN_PROTECTION, false);
-            mHourPaint.setTypeface(burnInProtection ? NORMAL_TYPEFACE : BOLD_TYPEFACE);
-
             mLowBitAmbient = properties.getBoolean(PROPERTY_LOW_BIT_AMBIENT, false);
-
-            if (Log.isLoggable(TAG, Log.DEBUG)) {
-                Log.d(TAG, "onPropertiesChanged: burn-in protection = " + burnInProtection
-                        + ", low-bit ambient = " + mLowBitAmbient);
-            }
         }
 
         @Override
@@ -379,33 +358,18 @@ public class SunshineWatchFaceService extends CanvasWatchFaceService {
         @Override
         public void onAmbientModeChanged(boolean inAmbientMode) {
             super.onAmbientModeChanged(inAmbientMode);
-            if (Log.isLoggable(TAG, Log.DEBUG)) {
-                Log.d(TAG, "onAmbientModeChanged: " + inAmbientMode);
+            if (mAmbient != inAmbientMode) {
+                mAmbient = inAmbientMode;
+                if (mLowBitAmbient) {
+                    mTimePaint.setAntiAlias(!inAmbientMode);
+                }
+                invalidate();
             }
-
-            if (mLowBitAmbient) {
-                boolean antiAlias = !inAmbientMode;;
-                mHourPaint.setAntiAlias(antiAlias);
-                mMinutePaint.setAntiAlias(antiAlias);
-                mSecondPaint.setAntiAlias(antiAlias);
-                mAmPmPaint.setAntiAlias(antiAlias);
-                mColonPaint.setAntiAlias(antiAlias);
-                mStepCountPaint.setAntiAlias(antiAlias);
-            }
-            invalidate();
-
-            // Whether the timer should be running depends on whether we're in ambient mode (as well
-            // as whether we're visible), so we may need to start or stop the timer.
+            // Whether the timer should be running depends on whether we're visible (as well as
+            // whether we're in ambient mode), so we may need to start or stop the timer.
             updateTimer();
         }
 
-        private String formatTwoDigitNumber(int hour) {
-            return String.format("%02d", hour);
-        }
-
-        private String getAmPmString(int amPm) {
-            return amPm == Calendar.AM ? mAmString : mPmString;
-        }
 
         @Override
         public void onDraw(Canvas canvas, Rect bounds) {

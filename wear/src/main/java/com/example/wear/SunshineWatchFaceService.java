@@ -409,60 +409,33 @@ public class SunshineWatchFaceService extends CanvasWatchFaceService {
 
         @Override
         public void onDraw(Canvas canvas, Rect bounds) {
-            long now = System.currentTimeMillis();
-            mCalendar.setTimeInMillis(now);
-            boolean is24Hour = DateFormat.is24HourFormat(SunshineWatchFaceService.this);
-
-            // Draw the background.
-            canvas.drawColor(BACKGROUND_COLOR);
-
-            // Draw the hours.
-            float x = mXOffset;
-            String hourString;
-            if (is24Hour) {
-                hourString = formatTwoDigitNumber(mCalendar.get(Calendar.HOUR_OF_DAY));
+            // Draw the background
+            if (isInAmbientMode()) {
+                canvas.drawColor(Color.BLACK);
             } else {
-                int hour = mCalendar.get(Calendar.HOUR);
-                if (hour == 0) {
-                    hour = 12;
-                }
-                hourString = String.valueOf(hour);
+                canvas.drawRect(0, 0, bounds.width(), bounds.height(), mBackgroundPaint);
             }
-            canvas.drawText(hourString, x, mYOffset, mHourPaint);
-            x += mHourPaint.measureText(hourString);
-
-            // Draw first colon (between hour and minute).
-            canvas.drawText(COLON_STRING, x, mYOffset, mColonPaint);
-
-            x += mColonWidth;
-
-            // Draw the minutes.
-            String minuteString = formatTwoDigitNumber(mCalendar.get(Calendar.MINUTE));
-            canvas.drawText(minuteString, x, mYOffset, mMinutePaint);
-            x += mMinutePaint.measureText(minuteString);
-
-            // In interactive mode, draw a second colon followed by the seconds.
-            // Otherwise, if we're in 12-hour mode, draw AM/PM
+            // Current time
+            float xPosTime = canvas.getWidth() / 2 - mTimePaint.measureText(time, 0, time.length()) / 2;
+            canvas.drawText(time, xPosTime, mTimeYOffset, mTimePaint);
             if (!isInAmbientMode()) {
-                canvas.drawText(COLON_STRING, x, mYOffset, mColonPaint);
+                // Current date
+                int padding = 16;
+                float yPosDate = mTimeYOffset + mDatePaint.getTextSize() + padding;
+                float xPosDate = canvas.getWidth() / 2 - mDatePaint.measureText(date, 0, date.length()) / 2;
+                canvas.drawText(date, xPosDate, yPosDate, mDatePaint);
 
-                x += mColonWidth;
-                canvas.drawText(formatTwoDigitNumber(
-                        mCalendar.get(Calendar.SECOND)), x, mYOffset, mSecondPaint);
-            } else if (!is24Hour) {
-                x += mColonWidth;
-                canvas.drawText(getAmPmString(
-                        mCalendar.get(Calendar.AM_PM)), x, mYOffset, mAmPmPaint);
-            }
+                if (mWeatherId != 0 && mBitmap != null) {
+                    // Weather Icon
+                    float yPosIcon = yPosDate + padding;
+                    float xPosIcon = canvas.getWidth() / 2 - mBitmap.getWidth();
+                    canvas.drawBitmap(mBitmap, xPosIcon, yPosIcon, mIconPaint);
 
-            // Only render steps if there is no peek card, so they do not bleed into each other
-            // in ambient mode.
-            if (getPeekCardPosition().isEmpty()) {
-                canvas.drawText(
-                        getString(R.string.fit_steps, mStepsTotal),
-                        mXStepsOffset,
-                        mYOffset + mLineHeight,
-                        mStepCountPaint);
+                    // Temperature
+                    float yPosWeather = yPosDate + mTemperaturePaint.getTextSize() + mBitmap.getHeight() / 2;
+                    float xPosWeather = canvas.getWidth() / 2;
+                    canvas.drawText(mWeather != null ? mWeather : "", xPosWeather, yPosWeather, mTemperaturePaint);
+                }
             }
         }
 

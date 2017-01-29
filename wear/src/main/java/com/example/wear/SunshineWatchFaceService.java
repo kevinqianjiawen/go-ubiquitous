@@ -330,31 +330,21 @@ public class SunshineWatchFaceService extends CanvasWatchFaceService {
 
         @Override
         public void onApplyWindowInsets(WindowInsets insets) {
-            if (Log.isLoggable(TAG, Log.DEBUG)) {
-                Log.d(TAG, "onApplyWindowInsets: " + (insets.isRound() ? "round" : "square"));
-            }
             super.onApplyWindowInsets(insets);
-
             // Load resources that have alternate values for round watches.
             Resources resources = SunshineWatchFaceService.this.getResources();
             boolean isRound = insets.isRound();
-            mXOffset = resources.getDimension(isRound
-                    ? R.dimen.fit_x_offset_round : R.dimen.fit_x_offset);
-            mXStepsOffset =  resources.getDimension(isRound
-                    ? R.dimen.fit_steps_or_distance_x_offset_round : R.dimen.fit_steps_or_distance_x_offset);
-            float textSize = resources.getDimension(isRound
-                    ? R.dimen.fit_text_size_round : R.dimen.fit_text_size);
-            float amPmSize = resources.getDimension(isRound
-                    ? R.dimen.fit_am_pm_size_round : R.dimen.fit_am_pm_size);
-
-            mHourPaint.setTextSize(textSize);
-            mMinutePaint.setTextSize(textSize);
-            mSecondPaint.setTextSize(textSize);
-            mAmPmPaint.setTextSize(amPmSize);
-            mColonPaint.setTextSize(textSize);
-            mStepCountPaint.setTextSize(resources.getDimension(R.dimen.fit_steps_or_distance_text_size));
-
-            mColonWidth = mColonPaint.measureText(COLON_STRING);
+            mTimeXOffset = resources.getDimension(isRound
+                    ? R.dimen.digital_time_x_offset_round : R.dimen.digital_time_x_offset);
+            float timeTextSize = resources.getDimension(isRound
+                    ? R.dimen.digital_time_text_size_round : R.dimen.digital_time_text_size);
+            mTimePaint.setTextSize(timeTextSize);
+            float dateTextSize = resources.getDimension(isRound
+                    ? R.dimen.date_text_size_round : R.dimen.date_text_size);
+            mDatePaint.setTextSize(dateTextSize);
+            float temperatureTextSize = resources.getDimension(isRound
+                    ? R.dimen.temperature_text_size_round : R.dimen.temperature_text_size);
+            mTemperaturePaint.setTextSize(temperatureTextSize);
         }
 
         @Override

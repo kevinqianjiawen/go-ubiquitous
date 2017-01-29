@@ -259,17 +259,6 @@ public class SunshineWatchFaceService extends CanvasWatchFaceService {
             super.onDestroy();
         }
 
-        private Paint createTextPaint(int color) {
-            return createTextPaint(color, NORMAL_TYPEFACE);
-        }
-
-        private Paint createTextPaint(int color, Typeface typeface) {
-            Paint paint = new Paint();
-            paint.setColor(color);
-            paint.setTypeface(typeface);
-            paint.setAntiAlias(true);
-            return paint;
-        }
 
         @Override
         public void onVisibilityChanged(boolean visible) {
@@ -306,6 +295,7 @@ public class SunshineWatchFaceService extends CanvasWatchFaceService {
             mRegisteredReceiver = true;
             IntentFilter filter = new IntentFilter(Intent.ACTION_TIMEZONE_CHANGED);
             SunshineWatchFaceService.this.registerReceiver(mReceiver, filter);
+            mGoogleApiClient.connect();
         }
 
         private void unregisterReceiver() {
@@ -314,6 +304,8 @@ public class SunshineWatchFaceService extends CanvasWatchFaceService {
             }
             mRegisteredReceiver = false;
             SunshineWatchFaceService.this.unregisterReceiver(mReceiver);
+            Wearable.DataApi.removeListener(mGoogleApiClient, this);
+            mGoogleApiClient.disconnect();
         }
 
         @Override
@@ -457,28 +449,6 @@ public class SunshineWatchFaceService extends CanvasWatchFaceService {
                     editor.apply();
                 }
             }
-        }
-
-        /*
-         * Subscribes to step count (for phones that don't have Google Fit app).
-         */
-        private void subscribeToSteps() {
-            Fitness.RecordingApi.subscribe(mGoogleApiClient, DataType.TYPE_STEP_COUNT_DELTA)
-                    .setResultCallback(new ResultCallback<Status>() {
-                        @Override
-                        public void onResult(Status status) {
-                            if (status.isSuccess()) {
-                                if (status.getStatusCode()
-                                        == FitnessStatusCodes.SUCCESS_ALREADY_SUBSCRIBED) {
-                                    Log.i(TAG, "Existing subscription for activity detected.");
-                                } else {
-                                    Log.i(TAG, "Successfully subscribed!");
-                                }
-                            } else {
-                                Log.i(TAG, "There was a problem subscribing.");
-                            }
-                        }
-                    });
         }
 
         @Override
